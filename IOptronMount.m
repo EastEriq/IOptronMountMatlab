@@ -13,6 +13,7 @@ classdef IOptronMount <handle
 
     properties(Hidden) % interrogable, but not of immediate use
         Port
+        AltUserLimit
         verbose=true;
     end
  
@@ -24,10 +25,10 @@ classdef IOptronMount <handle
                 port='';
             end
             I.SetPort(port);
-            % check if there is a focuser by querying its motion limits
+            % check if the mount is there by querying something
             try
                 model=I.Query('MountInfo');
-                I.Az=[]; % temporary, remove
+%                I.Az=[]; % temporary, remove
                 if ~strcmp(model(1:3),'012')
                     error('no IOptron mount found on '+port+'\n')
                 end
@@ -44,7 +45,7 @@ classdef IOptronMount <handle
                         % look for a named (i.e. SN) unit
                         I.SetPort(port);
                         if ~(isempty(I.Az))
-                            I.report('an IOptron mount was found on '+port+'\n')
+                            I.report('An IOptron mount was found on '+port+'\n')
                             break
                         else
                             I.report('no IOptron mount found on '+port+'\n')
@@ -82,6 +83,8 @@ classdef IOptronMount <handle
             fprintf(I.Port,':%s#',cmd);
             if strcmp(cmd,'Q')
                 pause(0.5); % abort requires a longer delay
+            elseif strcmp(cmd(1:2),'ST')
+                pause(0.7); % start and stop tracking even longer
             else
                 pause(0.1);
             end
@@ -135,12 +138,28 @@ classdef IOptronMount <handle
 
         function AZ=get.Az(I)
             resp=I.Query('GAC');
-            AZ=str2double(resp(1:9))/360000;
+            AZ=str2double(resp(10:18))/360000;
+        end
+        
+        function set.Az(I,AZ)
+            I.Query(sprintf('Sz%09d',AZ*360000))
+            resp=I.Query('MSS');
+            if resp~='1'
+                error('target position beyond limits')
+            end
         end
         
         function ALT=get.Alt(I)
             resp=I.Query('GAC');
-            ALT=str2double(resp(10:17))/360000;
+            ALT=str2double(resp(1:9))/360000;
+        end
+        
+        function set.Alt(I,ALT)
+            I.Query(sprintf('Sa%+08d',ALT*360000))
+            resp=I.Query('MSS');
+            if resp~='1'
+                error('target position beyond limits')
+            end
         end
         
         function DEC=get.Dec(I)
@@ -148,11 +167,27 @@ classdef IOptronMount <handle
             DEC=str2double(resp(1:9))/360000;
         end
         
+        function set.Dec(I,DEC)
+            I.Query(sprintf('Sd%+08d',DEC*360000))
+            resp=I.Query('MS1');
+            if resp~='1'
+                error('target position beyond limits')
+            end
+        end
+        
         function RA=get.RA(I)
             resp=I.Query('GEP');
-            RA=str2double(resp(10:17))/360000;
+            RA=str2double(resp(10:18))/360000;
         end
  
+        function set.RA(I,RA)
+            I.Query(sprintf('SRA%09d',RA*360000))
+            resp=I.Query('MS1'); % choose counterweight down for now
+            if resp~='1'
+                error('target position beyond limits')
+            end
+        end
+
     end
     
     methods % Moving commands.
@@ -169,8 +204,31 @@ classdef IOptronMount <handle
         function FullHoming(I)
             I.Query('MSH')
             % here, poll status and exit only when done
+            I.report('searching home')
+            while ~strcmp(I.Status.motion,'at home')
+                pause(.5)
+                I.report('.')
+            end
+            I.report(' done!\n')
         end
         
+    end
+    
+    methods % functioning parameters getters/setters & misc
+        
+        function alt=get.AltUserLimit(I)
+            resp=I.Query('GAL');
+            alt=str2double(resp(1:3));
+        end
+        
+        function set.AltUserLimit(I,alt)
+            if alt<-89 || alt>89
+                error('altitude limit illegal')
+            else
+                I.Query(sprintf('SAL%+03d',round(alt)));
+            end
+       end
+
     end
     
     methods(Access=private)
