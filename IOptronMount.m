@@ -14,6 +14,7 @@ classdef IOptronMount <handle
     properties(Hidden) % interrogable, but not of immediate use
         Port
         AltUserLimit
+        ParkingPosition
         verbose=true;
     end
  
@@ -202,14 +203,21 @@ classdef IOptronMount <handle
         end
         
         function FullHoming(I)
-            I.Query('MSH')
+            I.Query('MSH');
             % here, poll status and exit only when done
             I.report('searching home')
-            while ~strcmp(I.Status.motion,'at home')
+            retry=0; maxretry=100;
+            while ~strcmp(I.Status.motion,'at home') && retry<maxretry
                 pause(.5)
+                retry=retry+1;
                 I.report('.')
             end
-            I.report(' done!\n')
+            if retry<maxretry
+                I.report(' done!\n')
+            else
+                I.report('\n')
+                error('homing not attained in due time')
+            end
         end
         
     end
@@ -227,8 +235,40 @@ classdef IOptronMount <handle
             else
                 I.Query(sprintf('SAL%+03d',round(alt)));
             end
-       end
+        end
+       
+        function p=get.ParkingPosition(I)
+            resp=I.Query('GPC');
+            p.alt=str2double(resp(1:8))/360000;
+            p.az=str2double(resp(9:17))/360000;
+        end
 
+        function set.ParkingPosition(I,pos)
+            % allow for convenience pos to be either a struct or an array
+            if isstruct(pos)
+                p=pos;
+            else
+                p.az=pos(1);
+                p.alt=pos(2);
+            end
+            I.Query(sprintf('SPH%08d',p.alt*360000));
+            I.Query(sprintf('SPA%08d',p.az*360000));
+        end
+        
+        function Park(I)
+            resp=I.Query('MP1');
+            if resp~='1'
+                error('parking mount failed')
+            end
+        end
+        
+        function Unpark(I)
+            resp=I.Query('MP0');
+            if resp~='1'
+                error('unparking mount failed')
+            end
+        end
+        
     end
     
     methods(Access=private)
