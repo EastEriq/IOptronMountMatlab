@@ -120,7 +120,7 @@ classdef IOptronMount <handle
             % state enumerations - let the function error if an out-of
             %  -range value is returned
             gpsstate=["No GPS","no data","valid"];
-            motionstate=["stopped","track w/o PEC","slew","auto-guiding",...
+            motionstate=["stopped","track without PEC","slew","auto-guiding",...
                          "meridian flipping","track with PEC","parked",...
                          "at home"];
             trackingrate=["sidereal","lunar","solar","King","custom"];
@@ -334,7 +334,8 @@ classdef IOptronMount <handle
                     I.Query('ST0');
                 elseif rate>=0.1 && rate <=1.9
                     I.Query('RT4');
-                    I.Query(sprintf('RR%1.4f',rate));
+                    I.Query(sprintf('RR%05d',rate*10000));
+                    I.Query('ST1');
                 else
                     error('illegal tracking rate - should be [0.1:1.9] or 0 to stop')
                 end
@@ -342,9 +343,9 @@ classdef IOptronMount <handle
                 switch rate
                     case 'sidereal'
                         I.Query('RT0');
-                    case 'solar'
-                        I.Query('RT1');
                     case 'lunar'
+                        I.Query('RT1');
+                    case 'solar'
                         I.Query('RT2');
                     case 'King'
                         I.Query('RT3');
