@@ -246,11 +246,12 @@ classdef IOptronMount <handle
         
         function Abort(I)
             % emergency stop
-            I.Query('Q')
+            I.Query('Q');
+            I.Query('ST0');
         end
         
         function GoHome(I)
-            I.Query('MH')
+            I.Query('MH');
         end
         
         function FullHoming(I)
@@ -317,6 +318,39 @@ classdef IOptronMount <handle
             resp=I.Query('MP0');
             if resp~='1'
                 error('unparking mount failed')
+            end
+        end
+        
+    end
+    
+    methods %slewing and tracking
+        
+        function Track(I,rate)
+            % rate is either "sidereal","lunar","solar","King",
+            %  or a number in the range 0.1:1.9 for "custom"
+            %  rate in sidereal units. Rate=0 stops tracking
+            if isnumeric(rate)
+                if rate==0
+                    I.Query('ST0');
+                elseif rate>=0.1 && rate <=1.9
+                    I.Query('RT4');
+                    I.Query(sprintf('RR%1.4f',rate));
+                else
+                    error('illegal tracking rate - should be [0.1:1.9] or 0 to stop')
+                end
+            else
+                switch rate
+                    case 'sidereal'
+                        I.Query('RT0');
+                    case 'solar'
+                        I.Query('RT1');
+                    case 'lunar'
+                        I.Query('RT2');
+                    case 'King'
+                        I.Query('RT3');
+                    otherwise
+                        error('illegal rate - should be sidereal/solar/lunar/King')
+                end
             end
         end
         
