@@ -32,9 +32,10 @@ classdef IOptronMount <handle
                 model=I.Query('MountInfo');
 %                I.Az=[]; % temporary, remove
                 if ~strcmp(model(1:3),'012')
-                    error('no IOptron mount found on '+port+'\n')
+                    I.report(['no IOptron mount found on ',port,'\n'])
                 end
             catch
+                I.report(['no IOptron mount found on ',port,'\n'])
             end
         end
         
@@ -199,16 +200,43 @@ classdef IOptronMount <handle
             T.UTC_offset=str2double(resp(1:4));
             T.DST=(resp(5)=='1');
             % UTC time in secs, = (JD-J2000)*3600*24
-            T.UTC=str2double(resp(5:17))/1000;
+            %  actulally given in ms, but the resolution is 1000ms
+            T.UTC=str2double(resp(6:18))/1000;
+            % in matlab form
+            % T.datenum=T.UTC/24/3600+datenum('1/1/2000 12:00');
         end
         
         % setters for Time and Lon, Lat are needed if GPS is off
         
         function set.Time(I,T)
             % T structure with T.UTC_offset, T.DST, T.UTC
-            resp=I.Query(sprintf('SG%+03d',T.UTC_offset));
-            if resp~='1'
-                error('invalid UTC offset')
+            if T.UTC_offset>=-720 && T.UTC_offset<=780
+                I.Query(sprintf('SG%+03d',T.UTC_offset));
+            else
+                error('T.UTC_offset out of range')
+            end
+            if T.DST
+                I.Query('SDS1');
+            else
+                I.Query('SDS0');
+            end
+            % T.UTC = (T.datenum-datenum('1/1/2000 12:00'))*24*3600
+            if T.UTC>0
+                I.Query(sprintf('SUT%013d',T.UTC*1000));
+            else
+                error('T.UTC must be greater than 0, t>J2000')
+            end
+        end
+        
+        function setLonLat(I,Lon,Lat,hem)
+            I.Query(sprintf('SLO%+09d',Lon*360000));
+            I.Query(sprintf('SLA%+09d',Lat*360000));
+            if hem
+                % 1 is north
+                I.Query('SHE1');
+            else
+                % 0 is south
+                I.Query('SHE0');
             end
         end
         
