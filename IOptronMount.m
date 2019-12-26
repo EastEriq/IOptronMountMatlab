@@ -14,7 +14,8 @@ classdef IOptronMount <handle
     properties(Hidden) % interrogable, but not of immediate use
         Port
         AltUserLimit
-        ParkingPosition
+        ParkPosition
+        Time
         verbose=true;
     end
  
@@ -180,6 +181,10 @@ classdef IOptronMount <handle
             resp=I.Query('GEP');
             RA=str2double(resp(10:18))/360000;
         end
+        
+        % East or West of pier, and counterweight positions could
+        %  be read from the last two digits of the answer to GEP.
+        %  However, they should also be understandable from Az and Alt (?)
  
         function set.RA(I,RA)
             I.Query(sprintf('SRA%09d',RA*360000))
@@ -188,7 +193,25 @@ classdef IOptronMount <handle
                 error('target position beyond limits')
             end
         end
-
+        
+        function T=get.Time(I)
+            resp=I.Query('GUT');
+            T.UTC_offset=str2double(resp(1:4));
+            T.DST=(resp(5)=='1');
+            % UTC time in secs, = (JD-J2000)*3600*24
+            T.UTC=str2double(resp(5:17))/1000;
+        end
+        
+        % setters for Time and Lon, Lat are needed if GPS is off
+        
+        function set.Time(I,T)
+            % T structure with T.UTC_offset, T.DST, T.UTC
+            resp=I.Query(sprintf('SG%+03d',T.UTC_offset));
+            if resp~='1'
+                error('invalid UTC offset')
+            end
+        end
+        
     end
     
     methods % Moving commands.
@@ -237,13 +260,13 @@ classdef IOptronMount <handle
             end
         end
        
-        function p=get.ParkingPosition(I)
+        function p=get.ParkPosition(I)
             resp=I.Query('GPC');
             p.alt=str2double(resp(1:8))/360000;
             p.az=str2double(resp(9:17))/360000;
         end
 
-        function set.ParkingPosition(I,pos)
+        function set.ParkPosition(I,pos)
             % allow for convenience pos to be either a struct or an array
             if isstruct(pos)
                 p=pos;
