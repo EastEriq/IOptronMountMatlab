@@ -1,0 +1,3 @@
+function logreport(report_fid,varargin)
+  fprintf(report_fid,'%s: %s\n',datestr(now,'HH:MM:SS.FFF'),...
+          sprintf(varargin{:}));
