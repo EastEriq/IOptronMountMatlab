@@ -145,7 +145,7 @@ classdef IOptronMount <handle
         end
         
         function set.Az(I,AZ)
-            I.Query(sprintf('Sz%09d',AZ*360000))
+            I.Query(sprintf('Sz%09d',AZ*360000));
             resp=I.Query('MSS');
             if resp~='1'
                 error('target position beyond limits')
@@ -158,7 +158,7 @@ classdef IOptronMount <handle
         end
         
         function set.Alt(I,ALT)
-            I.Query(sprintf('Sa%+08d',ALT*360000))
+            I.Query(sprintf('Sa%+08d',ALT*360000));
             resp=I.Query('MSS');
             if resp~='1'
                 error('target position beyond limits')
@@ -171,7 +171,7 @@ classdef IOptronMount <handle
         end
         
         function set.Dec(I,DEC)
-            I.Query(sprintf('Sd%+08d',DEC*360000))
+            I.Query(sprintf('Sd%+08d',DEC*360000));
             resp=I.Query('MS1');
             if resp~='1'
                 error('target position beyond limits')
@@ -188,7 +188,7 @@ classdef IOptronMount <handle
         %  However, they should also be understandable from Az and Alt (?)
  
         function set.RA(I,RA)
-            I.Query(sprintf('SRA%09d',RA*360000))
+            I.Query(sprintf('SRA%09d',RA*360000));
             resp=I.Query('MS1'); % choose counterweight down for now
             if resp~='1'
                 error('target position beyond limits')
@@ -272,6 +272,11 @@ classdef IOptronMount <handle
             end
         end
         
+        function flag=isHomed(I)
+            % a bit redundant, to duplicate the same function of NexStarPCport
+            flag=strcmp(I.Status.motion,'at home');
+        end
+
     end
     
     methods % functioning parameters getters/setters & misc
