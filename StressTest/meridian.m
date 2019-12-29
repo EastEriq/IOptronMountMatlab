@@ -1,9 +1,9 @@
-function circling(I,alt)
+function meridian(I,az)
 
 finishup = onCleanup(@() I.Abort);
 
-for az=0:15:(360-0.01/3600) % 360 is off limits
-    fprintf('%g: ',az);
+for alt=0:5:90
+    fprintf('%g: ',alt)
     I.Alt=alt; I.Az=az;
     while ~strcmp(I.Status.motion,'stopped')
         pause(.5)

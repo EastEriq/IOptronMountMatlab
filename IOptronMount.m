@@ -145,7 +145,7 @@ classdef IOptronMount <handle
         end
         
         function set.Az(I,AZ)
-            I.Query(sprintf('Sz%09d',AZ*360000));
+            I.Query(sprintf('Sz%09d',int32(AZ*360000)));
             resp=I.Query('MSS');
             if resp~='1'
                 error('target position beyond limits')
@@ -158,7 +158,7 @@ classdef IOptronMount <handle
         end
         
         function set.Alt(I,ALT)
-            I.Query(sprintf('Sa%+08d',ALT*360000));
+            I.Query(sprintf('Sa%+09d',int32(ALT*360000)));
             resp=I.Query('MSS');
             if resp~='1'
                 error('target position beyond limits')
@@ -171,7 +171,7 @@ classdef IOptronMount <handle
         end
         
         function set.Dec(I,DEC)
-            I.Query(sprintf('Sd%+08d',DEC*360000));
+            I.Query(sprintf('Sd%+08d',int32(DEC*360000)));
             resp=I.Query('MS1');
             if resp~='1'
                 error('target position beyond limits')
@@ -188,7 +188,7 @@ classdef IOptronMount <handle
         %  However, they should also be understandable from Az and Alt (?)
  
         function set.RA(I,RA)
-            I.Query(sprintf('SRA%09d',RA*360000));
+            I.Query(sprintf('SRA%09d',int32(RA*360000)));
             resp=I.Query('MS1'); % choose counterweight down for now
             if resp~='1'
                 error('target position beyond limits')
@@ -211,7 +211,7 @@ classdef IOptronMount <handle
         function set.Time(I,T)
             % T structure with T.UTC_offset, T.DST, T.UTC
             if T.UTC_offset>=-720 && T.UTC_offset<=780
-                I.Query(sprintf('SG%+03d',T.UTC_offset));
+                I.Query(sprintf('SG%+03d',int16(T.UTC_offset)));
             else
                 error('T.UTC_offset out of range')
             end
@@ -222,15 +222,15 @@ classdef IOptronMount <handle
             end
             % T.UTC = (T.datenum-datenum('1/1/2000 12:00'))*24*3600
             if T.UTC>0
-                I.Query(sprintf('SUT%013d',T.UTC*1000));
+                I.Query(sprintf('SUT%013d',int32(T.UTC*1000)));
             else
                 error('T.UTC must be greater than 0, t>J2000')
             end
         end
         
         function setLonLat(I,Lon,Lat,hem)
-            I.Query(sprintf('SLO%+09d',Lon*360000));
-            I.Query(sprintf('SLA%+09d',Lat*360000));
+            I.Query(sprintf('SLO%+09d',int32(Lon*360000)));
+            I.Query(sprintf('SLA%+09d',int32(Lat*360000)));
             if hem
                 % 1 is north
                 I.Query('SHE1');
@@ -308,8 +308,8 @@ classdef IOptronMount <handle
                 p.az=pos(1);
                 p.alt=pos(2);
             end
-            I.Query(sprintf('SPH%08d',p.alt*360000));
-            I.Query(sprintf('SPA%08d',p.az*360000));
+            I.Query(sprintf('SPH%08d',int32(p.alt*360000)));
+            I.Query(sprintf('SPA%08d',int32(p.az*360000)));
         end
         
         function Park(I)
@@ -339,7 +339,7 @@ classdef IOptronMount <handle
                     I.Query('ST0');
                 elseif rate>=0.1 && rate <=1.9
                     I.Query('RT4');
-                    I.Query(sprintf('RR%05d',rate*10000));
+                    I.Query(sprintf('RR%05d',int32(rate*10000)));
                     I.Query('ST1');
                 else
                     error('illegal tracking rate - should be [0.1:1.9] or 0 to stop')
