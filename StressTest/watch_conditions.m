@@ -26,7 +26,7 @@ try
         if now-start_homing>homing_timeout
         else
             logreport(report_fid,'  (az,alt) homing discrepancy: %g", %g"',...
-                (I.Az-90)*3600,(I.Alt-90)*3600);
+                (I.Az-0)*3600,(I.Alt-I.Status.Lat)*3600);
             I.FullHoming
             ok=true; % if homing succeeded, all is fine
         end

@@ -28,7 +28,8 @@ while i<=min(numel(az),numel(alt)) && (now-start_time)*3600*24<test_duration
         logreport(report_fid,'Target #%d: (%g,%g)H ', i,az(i),alt(i));
         % coarse and fine in one shot
         I.Az=az(i); I.Alt=alt(i);
-        while ~strcmp(I.Status.motion,'stopped')
+        while ~strcmp(I.Status.motion,'stopped') &&...
+                ~strcmp(I.Status.motion,'at home')
             [ok,I]=watch_conditions(I,minimal_height,report_fid);
             pause(1)
         end
